@@ -9,8 +9,7 @@
 
 window.onload = function() {
     var canvas = document.getElementById('GameCanvas');
-    var PixelsBelowGraph = 0;
-    var ProblemBox;
+    var DiagramBox;
     var Triangle;
 
     function GetRandomInt(min, max) {
@@ -102,12 +101,12 @@ window.onload = function() {
         return { a:a, b:b, c:c, angleName:angleName, sideName:sideName };
     }
 
-    function ProbX(x) {
-        return ProblemBox.x1 + (ProblemBox.width * x);
+    function DiagramX(x) {
+        return DiagramBox.x1 + (DiagramBox.width * x);
     }
 
-    function ProbY(y) {
-        return ProblemBox.y2 - (ProblemBox.width * y);
+    function DiagramY(y) {
+        return DiagramBox.y2 - (DiagramBox.width * y);
     }
 
     function Distance(a, b) {
@@ -225,13 +224,13 @@ window.onload = function() {
 
     function DrawTriangle(context, triangle) {
         // Calculate the display coordinates of the triangle's vertices.
-        var a = { x: ProbX(triangle.a.x), y: ProbY(triangle.a.y) };
-        var b = { x: ProbX(triangle.b.x), y: ProbY(triangle.b.y) };
-        var c = { x: ProbX(triangle.c.x), y: ProbY(triangle.c.y) };
+        var a = { x: DiagramX(triangle.a.x), y: DiagramY(triangle.a.y) };
+        var b = { x: DiagramX(triangle.b.x), y: DiagramY(triangle.b.y) };
+        var c = { x: DiagramX(triangle.c.x), y: DiagramY(triangle.c.y) };
 
         // Draw the "right angle" indicator.
         // This is a pair of line segments framing the C point.
-        var raLen = ProblemBox.width * 0.05;
+        var raLen = DiagramBox.width * 0.05;
         var Q = PointInDir(c, a, raLen);
         var P = PointInDir(c, b, raLen);
         var R = { x:Q.x + (P.x - c.x), y:Q.y + (P.y - c.y) };
@@ -277,19 +276,8 @@ window.onload = function() {
 
     function ResizeGraph() {
         // Calculate "ideal" graph dimensions as a function of the window dimensions.
-        var gwidth = window.innerWidth;
-        var gheight = window.innerHeight - PixelsBelowGraph;
-
-        // If window height is too small, stop displaying text below graph.
-        var gMinAllowedHeight = 200;
-        if (gheight < gMinAllowedHeight) {
-            // Try omitting extra stuff below the graph.
-            gheight = window.innerHeight;
-            if (gheight < gMinAllowedHeight) {
-                // Still too small, so we just won't show the whole graph.
-                gheight = gMinAllowedHeight;
-            }
-        }
+        var gwidth  = Math.max(window.innerWidth,  200);
+        var gheight = Math.max(window.innerHeight, 200);
 
         // Resize the graph canvas if needed.
         if (canvas.width !== gwidth || canvas.height !== gheight) {
@@ -306,7 +294,7 @@ window.onload = function() {
         var y1 = Math.round((canvas.height - boxSize) / 2);
         var y2 = y1 + boxSize;
 
-        ProblemBox = {
+        DiagramBox = {
             width: boxSize,
             x1: x1,
             x2: x2,
