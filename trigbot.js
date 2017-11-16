@@ -9,6 +9,9 @@
 
 window.onload = function() {
     var canvas = document.getElementById('GameCanvas');
+    var PixelsBelowGraph = 0;
+    var ProblemBox;
+    var Triangle;
 
     function Rotate(point, angle) {
         // Given a point of the form {x:real, y:real} and an angle,
@@ -76,33 +79,84 @@ window.onload = function() {
         return { a:a, b:b, c:c };
     }
 
-    function GraphX(x) {
-        return x * canvas.width;
+    function ProbX(x) {
+        return ProblemBox.x1 + (ProblemBox.width * x);
     }
 
-    function GraphY(y) {
-        return (1-y) * canvas.height;
+    function ProbY(y) {
+        return ProblemBox.y2 - (ProblemBox.width * y);
     }
 
     function DrawTriangle(context, triangle) {
         context.beginPath();
         context.strokeStyle = 'rgb(0,0,0)';
         context.lineWidth = 1;
-        context.moveTo(GraphX(triangle.a.x), GraphY(triangle.a.y));
-        context.lineTo(GraphX(triangle.b.x), GraphY(triangle.b.y));
-        context.lineTo(GraphX(triangle.c.x), GraphY(triangle.c.y));
-        context.lineTo(GraphX(triangle.a.x), GraphY(triangle.a.y));
+        context.moveTo(ProbX(triangle.a.x), ProbY(triangle.a.y));
+        context.lineTo(ProbX(triangle.b.x), ProbY(triangle.b.y));
+        context.lineTo(ProbX(triangle.c.x), ProbY(triangle.c.y));
+        context.lineTo(ProbX(triangle.a.x), ProbY(triangle.a.y));
         context.stroke();
     }
 
-    function UpdateDisplay(triangle) {
+    function UpdateDisplay() {
         var context = canvas.getContext('2d');
-        DrawTriangle(context, triangle);
+
+        // Erase previous contents
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+        DrawTriangle(context, Triangle);
+    }
+
+    function ResizeGraph() {
+        // Calculate "ideal" graph dimensions as a function of the window dimensions.
+        var gwidth = window.innerWidth;
+        var gheight = window.innerHeight - PixelsBelowGraph;
+
+        // If window height is too small, stop displaying text below graph.
+        var gMinAllowedHeight = 200;
+        if (gheight < gMinAllowedHeight) {
+            // Try omitting extra stuff below the graph.
+            gheight = window.innerHeight;
+            if (gheight < gMinAllowedHeight) {
+                // Still too small, so we just won't show the whole graph.
+                gheight = gMinAllowedHeight;
+            }
+        }
+
+        // Resize the graph canvas if needed.
+        if (canvas.width !== gwidth || canvas.height !== gheight) {
+            canvas.width = gwidth;
+            canvas.height = gheight;
+        }
+
+        // (Re)calculate the problem box within the current canvas size.
+        // The problem box is a square that is centered inside the canvas.
+        // Pick the minimum dimension (width or height) as the size of the box.
+        var boxSize = 0.9 * Math.min(canvas.width, canvas.height);
+        var x1 = Math.round((canvas.width - boxSize) / 2);
+        var x2 = x1 + boxSize;
+        var y1 = Math.round((canvas.height - boxSize) / 2);
+        var y2 = y1 + boxSize;
+
+        ProblemBox = {
+            width: boxSize,
+            x1: x1,
+            x2: x2,
+            y1: y1,
+            y2: y2
+        };
+    }
+
+    function OnResize() {
+        ResizeGraph();
+        UpdateDisplay();
     }
 
     function Init() {
-        var triangle = MakeRandomTriangle();
-        UpdateDisplay(triangle);
+        ResizeGraph();
+        window.addEventListener('resize', OnResize);
+        Triangle = MakeRandomTriangle();
+        UpdateDisplay();
     }
 
     Init();
