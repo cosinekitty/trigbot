@@ -87,14 +87,50 @@ window.onload = function() {
         return ProblemBox.y2 - (ProblemBox.width * y);
     }
 
+    function Distance(a, b) {
+        var dx = b.x - a.x;
+        var dy = b.y - a.y;
+        return Math.sqrt(dx*dx + dy*dy);
+    }
+
+    function PointInDir(a, b, len) {
+        var dx = b.x - a.x;
+        var dy = b.y - a.y;
+        var denom = Math.sqrt(dx*dx + dy*dy);
+        dx /= denom;
+        dy /= denom;
+        return { x: a.x + len*dx, y: a.y + len*dy };
+    }
+
     function DrawTriangle(context, triangle) {
+        // Calculate the display coordinates of the triangle's vertices.
+        var a = { x: ProbX(triangle.a.x), y: ProbY(triangle.a.y) };
+        var b = { x: ProbX(triangle.b.x), y: ProbY(triangle.b.y) };
+        var c = { x: ProbX(triangle.c.x), y: ProbY(triangle.c.y) };
+
+        // Draw the "right angle" indicator.
+        // This is a pair of line segments framing the C point.
+        var raLen = ProblemBox.width * 0.05;
+        var Q = PointInDir(c, a, raLen);
+        var P = PointInDir(c, b, raLen);
+        var R = { x:Q.x + (P.x - c.x), y:Q.y + (P.y - c.y) };
+        
+        context.beginPath();
+        context.strokeStyle = 'rgb(0,128,0)';
+        context.lineWidth = 1;
+        context.moveTo(Q.x, Q.y);
+        context.lineTo(R.x, R.y);
+        context.lineTo(P.x, P.y);
+        context.stroke();
+        
+        // Draw the boundary of the triangle.
         context.beginPath();
         context.strokeStyle = 'rgb(0,0,0)';
         context.lineWidth = 1;
-        context.moveTo(ProbX(triangle.a.x), ProbY(triangle.a.y));
-        context.lineTo(ProbX(triangle.b.x), ProbY(triangle.b.y));
-        context.lineTo(ProbX(triangle.c.x), ProbY(triangle.c.y));
-        context.lineTo(ProbX(triangle.a.x), ProbY(triangle.a.y));
+        context.moveTo(a.x, a.y);
+        context.lineTo(b.x, b.y);
+        context.lineTo(c.x, c.y);
+        context.lineTo(a.x, a.y);
         context.stroke();
     }
 
@@ -153,10 +189,9 @@ window.onload = function() {
     }
 
     function Init() {
-        ResizeGraph();
-        window.addEventListener('resize', OnResize);
         Triangle = MakeRandomTriangle();
-        UpdateDisplay();
+        OnResize();
+        window.addEventListener('resize', OnResize);
     }
 
     Init();
