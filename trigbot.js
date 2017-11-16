@@ -150,7 +150,9 @@ window.onload = function() {
         context.fillStyle = 'rgb(0,0,255)';
         context.font = 'italic 24px serif';
         context.textBaseline = 'middle';
-        context.fillText(name, t.x, t.y);
+        context.fillText(name, t.x - 6, t.y);
+
+        //DrawTestMarker(context, t);
     }
 
     function BisectVector(a, b, c, distance) {
@@ -174,6 +176,18 @@ window.onload = function() {
         return { x: a.x + distance*ux, y: a.y + distance*uy };
     }
 
+    function DrawTestMarker(context, point) {
+        var delta = 5;
+        context.beginPath();
+        context.strokeStyle = 'rgb(0,0,0)'
+        context.lineWidth = 1;
+        context.moveTo(point.x - delta, point.y);
+        context.lineTo(point.x + delta, point.y);
+        context.moveTo(point.x, point.y - delta);
+        context.lineTo(point.x, point.y + delta);
+        context.stroke();
+    }
+
     function DrawAngleVarName(context, a, b, c, name) {
         // Draw the variable name for an angle.
         // It is inside the vertex 'a', using 'b' and 'c' as direction hints.
@@ -182,7 +196,8 @@ window.onload = function() {
         context.fillStyle = 'rgb(64,0,255)';
         context.font = 'italic 24px serif';
         context.textBaseline = 'middle';
-        context.fillText(name, t.x, t.y);
+        context.fillText(name, t.x - 6, t.y);
+        //DrawTestMarker(context, t);
     }
 
     function DrawTriangle(context, triangle) {
