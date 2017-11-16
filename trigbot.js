@@ -102,6 +102,49 @@ window.onload = function() {
         return { x: a.x + len*dx, y: a.y + len*dy };
     }
 
+    function Midpoint(a, b) {
+        return { x: (a.x + b.x)/2, y: (a.y + b.y)/2 };
+    }
+
+    function Perpendicular(a, b) {
+        var dx = b.x - a.x;
+        var dy = b.y - a.y;
+        var denom = Math.sqrt(dx*dx + dy*dy);
+        return { x: -dy/denom, y: dx/denom };     // perpendicular unit vector
+    }
+
+    function DrawSideVarName(context, a, b, c, name) {
+        // Find midpoint between b and c.
+        var m = Midpoint(b, c);
+
+        // Find perpendicular unit vector between b and c.
+        var perp = Perpendicular(b, c);
+
+        // Offset the text in the perpendicular direction from the midpoint.
+        // Choose the direction away from a.
+        // Find vector from a to m.
+        var am = { x: m.x - a.x, y: m.y - a.y };
+
+        // Take dot product of perp with that vector.
+        var dot = am.x*perp.x + am.y*perp.y;
+
+        // If positive, then perp is pointing in correct direction 
+        // (away from center of triangle).
+        // Otherwise, we need to toggle the direction of perp.
+        if (dot < 0) {
+            perp.x *= -1;
+            perp.y *= -1;
+        }
+
+        var textDist = 24;//Math.max(0.03 * ProblemBox.width, 12);
+        var t = { x: m.x + textDist*perp.x, y: m.y + textDist*perp.y };
+
+        // Draw the text.
+        context.fillStyle = 'rgb(0,0,100)';
+        context.font = 'italic 24px serif';
+        context.fillText(name, t.x, t.y);
+    }    
+
     function DrawTriangle(context, triangle) {
         // Calculate the display coordinates of the triangle's vertices.
         var a = { x: ProbX(triangle.a.x), y: ProbY(triangle.a.y) };
@@ -132,6 +175,13 @@ window.onload = function() {
         context.lineTo(c.x, c.y);
         context.lineTo(a.x, a.y);
         context.stroke();
+
+        // Write the letters a, b, c opposite each like-named vertex.
+        // These are side length variables.
+        // Tricky: need to write the variable names outside the triangle.
+        DrawSideVarName(context, a, b, c, 'a');
+        DrawSideVarName(context, b, c, a, 'b');
+        DrawSideVarName(context, c, a, b, 'c');
     }
 
     function UpdateDisplay() {
