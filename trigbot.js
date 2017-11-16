@@ -13,6 +13,13 @@ window.onload = function() {
     var ProblemBox;
     var Triangle;
 
+    function getRandomIntInclusive(min, max) {
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min; //The maximum is inclusive and the minimum is inclusive 
+    }
+
     function Rotate(point, angle) {
         // Given a point of the form {x:real, y:real} and an angle,
         // return another point with those coordinates rotated by the angle.
@@ -75,8 +82,28 @@ window.onload = function() {
             a = b;
             b = t;
         }
+
+        // Pick random variable names for angles and sides.
+        var angleName;
+        var sideName;
+        switch (getRandomIntInclusive(0, 2)) {
+            case 0:
+                angleName = { a:'P', b:'Q' };
+                sideName = { a:'r', b:'s', c:'t' };
+                break;
+
+            case 1:
+                angleName = { a:'A', b:'B' };
+                sideName = { a:'t', b:'u', c:'v' };
+                break;
+
+            default:
+                angleName = { a:'\u03b1', b:'\u03b2' };
+                sideName = { a:'w', b:'h', c:'r' };
+                break;
+        }
         
-        return { a:a, b:b, c:c };
+        return { a:a, b:b, c:c, angleName:angleName, sideName:sideName };
     }
 
     function ProbX(x) {
@@ -234,13 +261,13 @@ window.onload = function() {
         // Write the letters a, b, c opposite each like-named vertex.
         // These are side length variables.
         // Tricky: need to write the variable names outside the triangle.
-        DrawSideVarName(context, a, b, c, 'a');
-        DrawSideVarName(context, b, c, a, 'b');
-        DrawSideVarName(context, c, a, b, 'c');
+        DrawSideVarName(context, a, b, c, triangle.sideName.a);
+        DrawSideVarName(context, b, c, a, triangle.sideName.b);
+        DrawSideVarName(context, c, a, b, triangle.sideName.c);
 
         // Write non-right angle names inside each vertex.
-        DrawAngleVarName(context, a, b, c, 'A');
-        DrawAngleVarName(context, b, c, a, 'B');
+        DrawAngleVarName(context, a, b, c, triangle.angleName.a);
+        DrawAngleVarName(context, b, c, a, triangle.angleName.b);
     }
 
     function UpdateDisplay() {
