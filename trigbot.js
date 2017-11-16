@@ -102,6 +102,13 @@ window.onload = function() {
         return { x: a.x + len*dx, y: a.y + len*dy };
     }
 
+    function UnitVector(a, b) {
+        var dx = b.x - a.x;
+        var dy = b.y - a.y;
+        var denom = Math.sqrt(dx*dx + dy*dy);
+        return { x: dx/denom, y: dy/denom };
+    }
+
     function Midpoint(a, b) {
         return { x: (a.x + b.x)/2, y: (a.y + b.y)/2 };
     }
@@ -140,10 +147,43 @@ window.onload = function() {
         var t = { x: m.x + textDist*perp.x, y: m.y + textDist*perp.y };
 
         // Draw the text.
-        context.fillStyle = 'rgb(0,0,100)';
+        context.fillStyle = 'rgb(0,0,255)';
         context.font = 'italic 24px serif';
+        context.textBaseline = 'middle';
         context.fillText(name, t.x, t.y);
-    }    
+    }
+
+    function BisectVector(a, b, c, distance) {
+        // Find a vector whose angle is halfway between the rays ab and ac.
+        var bAngle = Math.atan2(b.y - a.y, b.x - a.x);
+        var cAngle = Math.atan2(c.y - a.y, c.x - a.x);
+        var midAngle = (bAngle + cAngle)/2;
+        var ux = Math.cos(midAngle);
+        var uy = Math.sin(midAngle);
+        // Correct (ux, uy) to point in correct direction as needed.
+        // Dot product with midpoint vector should be positive.
+        // If not, toggle unit vector.
+        var m = Midpoint(b, c);
+        var dx = m.x - a.x;
+        var dy = m.y - a.y;
+        var dot = dx*ux + dy*uy;
+        if (dot < 0) {
+            ux *= -1;
+            uy *= -1;
+        }
+        return { x: a.x + distance*ux, y: a.y + distance*uy };
+    }
+
+    function DrawAngleVarName(context, a, b, c, name) {
+        // Draw the variable name for an angle.
+        // It is inside the vertex 'a', using 'b' and 'c' as direction hints.
+        var t = BisectVector(a, b, c, 48);
+
+        context.fillStyle = 'rgb(64,0,255)';
+        context.font = 'italic 24px serif';
+        context.textBaseline = 'middle';
+        context.fillText(name, t.x, t.y);
+    }
 
     function DrawTriangle(context, triangle) {
         // Calculate the display coordinates of the triangle's vertices.
@@ -182,6 +222,10 @@ window.onload = function() {
         DrawSideVarName(context, a, b, c, 'a');
         DrawSideVarName(context, b, c, a, 'b');
         DrawSideVarName(context, c, a, b, 'c');
+
+        // Write non-right angle names inside each vertex.
+        DrawAngleVarName(context, a, b, c, 'A');
+        DrawAngleVarName(context, b, c, a, 'B');
     }
 
     function UpdateDisplay() {
