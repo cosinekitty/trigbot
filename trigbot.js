@@ -13,11 +13,11 @@ window.onload = function() {
     var ProblemBox;
     var Triangle;
 
-    function getRandomIntInclusive(min, max) {
+    function GetRandomInt(min, max) {
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
         min = Math.ceil(min);
         max = Math.floor(max);
-        return Math.floor(Math.random() * (max - min + 1)) + min; //The maximum is inclusive and the minimum is inclusive 
+        return Math.floor(Math.random() * (max - min)) + min; //The maximum is exclusive and the minimum is inclusive
     }
 
     function Rotate(point, angle) {
@@ -84,24 +84,20 @@ window.onload = function() {
         }
 
         // Pick random variable names for angles and sides.
-        var angleName;
-        var sideName;
-        switch (getRandomIntInclusive(0, 2)) {
-            case 0:
-                angleName = { a:'P', b:'Q' };
-                sideName = { a:'r', b:'s', c:'t' };
-                break;
+        var angleNameTable = [
+            { a:'P', b:'Q' },
+            { a:'A', b:'B' },
+            { a:'\u03b1', b:'\u03b2' }
+        ];
 
-            case 1:
-                angleName = { a:'A', b:'B' };
-                sideName = { a:'t', b:'u', c:'v' };
-                break;
+        var sideNameTable = [
+            { a:'r', b:'s', c:'t' },
+            { a:'t', b:'u', c:'v' },
+            { a:'w', b:'h', c:'r' }
+        ];
 
-            default:
-                angleName = { a:'\u03b1', b:'\u03b2' };
-                sideName = { a:'w', b:'h', c:'r' };
-                break;
-        }
+        var angleName = angleNameTable[GetRandomInt(0, angleNameTable.length)];
+        var sideName = sideNameTable[GetRandomInt(0, sideNameTable.length)];
         
         return { a:a, b:b, c:c, angleName:angleName, sideName:sideName };
     }
@@ -170,7 +166,7 @@ window.onload = function() {
             perp.y *= -1;
         }
 
-        var textDist = 24;//Math.max(0.03 * ProblemBox.width, 12);
+        var textDist = 24;
         var t = { x: m.x + textDist*perp.x, y: m.y + textDist*perp.y };
 
         // Draw the text.
@@ -218,7 +214,7 @@ window.onload = function() {
     function DrawAngleVarName(context, a, b, c, name) {
         // Draw the variable name for an angle.
         // It is inside the vertex 'a', using 'b' and 'c' as direction hints.
-        var t = BisectVector(a, b, c, 48);
+        var t = BisectVector(a, b, c, 60);
 
         context.fillStyle = 'rgb(64,0,255)';
         context.font = 'italic 24px serif';
