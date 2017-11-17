@@ -87,7 +87,7 @@ window.onload = function() {
         var angleNameTable = [
             { a:'P', b:'Q' },
             { a:'A', b:'B' },
-            { a:'\u03b1', b:'\u03b2' }
+            { a:'\u03b1' /*alpha*/, b:'\u03b2' /*beta*/ }
         ];
 
         var sideNameTable = [
@@ -98,8 +98,58 @@ window.onload = function() {
 
         var angleName = angleNameTable[GetRandomInt(0, angleNameTable.length)];
         var sideName = sideNameTable[GetRandomInt(0, sideNameTable.length)];
-        
-        return { a:a, b:b, c:c, angleName:angleName, sideName:sideName };
+
+        // Generate a random problem by picking a random trig function
+        // (sin, cos, tan) and a random angle for it to operate on.
+        // Then the ratio of sides is determined by the function and angle.
+        var trigFunctions = ['sin', 'cos', 'tan'];
+        var funcIndex = GetRandomInt(0, trigFunctions.length);
+        var funcName = trigFunctions[funcIndex];
+        var angleNameList = [angleName.a, angleName.b];
+        var sideNameList = [sideName.a, sideName.b, sideName.c];
+        var knownAngleIndex = GetRandomInt(0, angleNameList.length);
+        var knownAngleName = angleNameList[knownAngleIndex];
+        var sideIndexList;
+
+        // Determine the correct answer.
+        switch (funcName) {
+        case 'sin':
+            sideIndexList = knownAngleIndex ? [1, 2] : [0, 2];
+            break;
+
+        case 'cos':
+            sideIndexList = knownAngleIndex ? [0, 2] : [1, 2];
+            break;
+
+        case 'tan':
+            sideIndexList = knownAngleIndex ? [1, 0] : [0, 1];
+            break;
+
+        default:
+            throw 'Unknown trig function ' + funcName;
+        }
+
+        var wantedIndex = GetRandomInt(0, 2);
+        var wantedSideName = sideNameList[sideIndexList[wantedIndex]];
+        var knownSideName = sideNameList[sideIndexList[1-wantedIndex]];
+        var correctAnswer = funcName + ' ' + knownAngleName + ' = ' + sideNameList[sideIndexList[0]] + '/' + sideNameList[sideIndexList[1]];
+
+        var problem = {
+            wantedSideName: wantedSideName,
+            knownSideName: knownSideName,
+            knownAngleName: knownAngleName,
+            correctAnswer: correctAnswer
+        };
+        //console.log(problem);
+
+        return { 
+            a: a, 
+            b: b, 
+            c: c, 
+            angleName: angleName,
+            sideName: sideName,
+            problem: problem
+        };
     }
 
     function DiagramX(x) {
@@ -268,10 +318,11 @@ window.onload = function() {
 
     function DrawChoices(context, triangle) {
         // Draw a rectangle for now just so I can see where the choice box is.
-        context.beginPath();
         context.strokeStyle = 'rgb(128,128,128)';
         context.lineWidth = 1;
         context.strokeRect(ChoiceBox.x1, ChoiceBox.y1, ChoiceBox.width, ChoiceBox.height);
+
+        // Allocate regions for the problem statement and the answer options.
     }
 
     function UpdateDisplay() {
