@@ -132,13 +132,24 @@ window.onload = function() {
         var wantedIndex = GetRandomInt(0, 2);
         var wantedSideName = sideNameList[sideIndexList[wantedIndex]];
         var knownSideName = sideNameList[sideIndexList[1-wantedIndex]];
-        var correctAnswer = funcName + ' ' + knownAngleName + ' = ' + sideNameList[sideIndexList[0]] + '/' + sideNameList[sideIndexList[1]];
+
+        // Generate a list of 6 answers, the first of which is correct, the 5 remaining wrong.
+        var answers = [
+            funcName + ' ' + knownAngleName + ' = ' + sideNameList[sideIndexList[0]] + '/' + sideNameList[sideIndexList[1]],
+            trigFunctions[(funcIndex+1)%trigFunctions.length] + ' ' + knownAngleName + ' = ' + sideNameList[sideIndexList[0]] + '/' + sideNameList[sideIndexList[1]],
+            trigFunctions[(funcIndex+2)%trigFunctions.length] + ' ' + knownAngleName + ' = ' + sideNameList[sideIndexList[0]] + '/' + sideNameList[sideIndexList[1]],
+            funcName + ' ' + knownAngleName + ' = ' + sideNameList[sideIndexList[1]] + '/' + sideNameList[sideIndexList[0]],
+            trigFunctions[(funcIndex+1)%trigFunctions.length] + ' ' + knownAngleName + ' = ' + sideNameList[sideIndexList[1]] + '/' + sideNameList[sideIndexList[0]],
+            trigFunctions[(funcIndex+2)%trigFunctions.length] + ' ' + knownAngleName + ' = ' + sideNameList[sideIndexList[1]] + '/' + sideNameList[sideIndexList[0]],
+        ];
+
+        console.log(answers);
 
         var problem = {
             wantedSideName: wantedSideName,
             knownSideName: knownSideName,
             knownAngleName: knownAngleName,
-            correctAnswer: correctAnswer
+            answers: answers
         };
         //console.log(problem);
 
