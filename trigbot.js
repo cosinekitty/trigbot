@@ -9,8 +9,9 @@
 
 window.onload = function() {
     var canvas = document.getElementById('GameCanvas');
-    var DiagramBox;
-    var Triangle;
+    var DiagramBox;     // a box holding the diagram of the triangle
+    var ChoiceBox;      // a box holding the question and multiple choice answers
+    var Triangle;       // a randomly generated triangle problem
 
     function GetRandomInt(min, max) {
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
@@ -265,6 +266,14 @@ window.onload = function() {
         DrawAngleVarName(context, b, c, a, triangle.angleName.b);
     }
 
+    function DrawChoices(context, triangle) {
+        // Draw a rectangle for now just so I can see where the choice box is.
+        context.beginPath();
+        context.strokeStyle = 'rgb(128,128,128)';
+        context.lineWidth = 1;
+        context.strokeRect(ChoiceBox.x1, ChoiceBox.y1, ChoiceBox.width, ChoiceBox.height);
+    }
+
     function UpdateDisplay() {
         var context = canvas.getContext('2d');
 
@@ -272,12 +281,16 @@ window.onload = function() {
         context.clearRect(0, 0, canvas.width, canvas.height);
 
         DrawTriangle(context, Triangle);
+        DrawChoices(context, Triangle);
     }
 
     function ResizeGraph() {
         // Calculate "ideal" graph dimensions as a function of the window dimensions.
         var gwidth  = Math.max(window.innerWidth,  200);
         var gheight = Math.max(window.innerHeight, 200);
+        var divide, diagBoxSize, dx1, dy1;
+        var choiceBoxWidth, choiceBoxHeight, cx1, cy1;
+        var choiceBorder = 20;
 
         // Resize the graph canvas if needed.
         if (canvas.width !== gwidth || canvas.height !== gheight) {
@@ -285,21 +298,56 @@ window.onload = function() {
             canvas.height = gheight;
         }
 
-        // (Re)calculate the problem box within the current canvas size.
-        // The problem box is a square that is centered inside the canvas.
-        // Pick the minimum dimension (width or height) as the size of the box.
-        var boxSize = 0.9 * Math.min(canvas.width, canvas.height);
-        var x1 = Math.round((canvas.width - boxSize) / 2);
-        var x2 = x1 + boxSize;
-        var y1 = Math.round((canvas.height - boxSize) / 2);
-        var y2 = y1 + boxSize;
+        // Calculate layout.
+        // If the canvas is wider than it is high, we split it into
+        // a diagram box on the left and a choice box on the right.
+        // Otherwise we split into a diagram box on the top and
+        // a choice box on the bottom.
+        if (canvas.width > canvas.height) {
+            // Split left/right: diagram on left, choices on right.
+            divide = Math.floor(canvas.width / 2);
+
+            // calculate diagram box on the left
+            diagBoxSize = 0.9 * Math.min(divide, canvas.height);
+            dx1 = Math.round((divide - diagBoxSize) / 2);
+            dy1 = Math.round((canvas.height - diagBoxSize) / 2);
+
+            // calculate choice box on the right
+            choiceBoxWidth = (canvas.width - divide) - 2*choiceBorder;
+            choiceBoxHeight = canvas.height - 2*choiceBorder;
+            cx1 = divide + choiceBorder;
+            cy1 = choiceBorder;
+        } else {
+            // Split top/bottom: diagram on top, choices on bottom.
+            divide = Math.floor(canvas.height / 2);
+
+            // calculate diagram box on the top
+            diagBoxSize = 0.9 * Math.min(canvas.width, divide);
+            dx1 = Math.round((canvas.width - diagBoxSize) / 2);
+            dy1 = Math.round((divide - diagBoxSize) / 2);
+
+            // calculate choice box on the bottom
+            choiceBoxWidth = canvas.width - 2*choiceBorder;
+            choiceBoxHeight = (canvas.height - divide) - 2*choiceBorder;
+            cx1 = choiceBorder;
+            cy1 = divide + choiceBorder;
+        }
 
         DiagramBox = {
-            width: boxSize,
-            x1: x1,
-            x2: x2,
-            y1: y1,
-            y2: y2
+            width: diagBoxSize,
+            x1: dx1,
+            x2: dx1 + diagBoxSize,
+            y1: dy1,
+            y2: dy1 + diagBoxSize
+        };
+
+        ChoiceBox = {
+            width: choiceBoxWidth,
+            height: choiceBoxHeight,
+            x1: cx1,
+            x2: cx1 + choiceBoxWidth,
+            y1: cy1,
+            y2: cy1 + choiceBoxHeight
         };
     }
 
