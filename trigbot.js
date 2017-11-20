@@ -28,6 +28,23 @@ window.onload = function() {
         return { x:(point.x*cos - point.y*sin), y:(point.y*cos + point.x*sin) };
     }
 
+    function ShuffleOrder(n) {
+        var i, r, t;
+
+        var shuffle = [];
+        for (i=0; i<n; ++i)
+            shuffle.push(i);
+
+        for (i=n-1; i>0; --i) {
+            r = GetRandomInt(0, i+1);
+            t = shuffle[r];
+            shuffle[r] = shuffle[i];
+            shuffle[i] = t;
+        }
+
+        return shuffle;
+    }
+
     function MakeRandomTriangle() {
         // This function creates a normalized but random right triangle.
         // That means a triangle that includes a right angle but
@@ -143,15 +160,14 @@ window.onload = function() {
             trigFunctions[(funcIndex+2)%trigFunctions.length] + ' ' + knownAngleName + ' = ' + sideNameList[sideIndexList[1]] + '/' + sideNameList[sideIndexList[0]],
         ];
 
-        console.log(answers);
-
         var problem = {
             wantedSideName: wantedSideName,
             knownSideName: knownSideName,
             knownAngleName: knownAngleName,
-            answers: answers
+            answers: answers,
+            shuffle: ShuffleOrder(answers.length)
         };
-        //console.log(problem);
+        console.log(problem);
 
         return { 
             a: a, 
@@ -327,13 +343,53 @@ window.onload = function() {
         DrawAngleVarName(context, b, c, a, triangle.angleName.b);
     }
 
+    function DrawChoiceText(context, text, font, x, y) {
+        context.fillStyle = 'rgb(0,0,0)';
+        context.font = font;
+        context.textBaseline = 'middle';
+        context.fillText(text, x, y);
+        var tm = context.measureText(text);
+        return x + tm.width;
+    }
+
+    function ChoiceTextX(col) {
+        return ChoiceBox.x1 + ChoiceBox.colWidth*col + ChoiceBox.leftMargin;
+    }
+
+    function ChoiceTextY(row) {
+        return ChoiceBox.y1 + ChoiceBox.rowHeight*row + ChoiceBox.topMargin;
+    }
+
     function DrawChoices(context, triangle) {
+        var i, x, y;
+
         // Draw a rectangle for now just so I can see where the choice box is.
         context.strokeStyle = 'rgb(128,128,128)';
         context.lineWidth = 1;
         context.strokeRect(ChoiceBox.x1, ChoiceBox.y1, ChoiceBox.width, ChoiceBox.height);
 
         // Allocate regions for the problem statement and the answer options.
+        y = ChoiceTextY(0);
+        x = ChoiceTextX(0);
+        x = DrawChoiceText(context, 'Given: ', '24px serif', x, y);
+        x = DrawChoiceText(context, triangle.problem.knownAngleName, 'italic 24px serif', x, y);
+        x = DrawChoiceText(context, ' and ', '24px serif', x, y);
+        x = DrawChoiceText(context, triangle.problem.knownSideName, 'italic 24px serif', x, y);
+
+        y = ChoiceTextY(1);
+        x = ChoiceTextX(0);
+        x = DrawChoiceText(context, 'Wanted: ', '24px serif', x, y);
+        x = DrawChoiceText(context, triangle.problem.wantedSideName, 'italic 24px serif', x, y);
+
+        y = ChoiceTextY(3);
+        x = ChoiceTextX(0);
+        DrawChoiceText(context, 'Click the correct equation:', '24px serif', x, y);
+
+        for (i=0; i < triangle.problem.answers.length; ++i) {
+            y = ChoiceTextY(5 + i);
+            x = ChoiceTextX(0);
+            DrawChoiceText(context, triangle.problem.answers[triangle.problem.shuffle[i]], '24px serif', x, y);
+        }
     }
 
     function UpdateDisplay() {
@@ -409,7 +465,11 @@ window.onload = function() {
             x1: cx1,
             x2: cx1 + choiceBoxWidth,
             y1: cy1,
-            y2: cy1 + choiceBoxHeight
+            y2: cy1 + choiceBoxHeight,
+            topMargin: 24,
+            leftMargin: 24,
+            colWidth: 24,
+            rowHeight: 30
         };
     }
 
