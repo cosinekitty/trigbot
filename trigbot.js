@@ -167,7 +167,7 @@ window.onload = function() {
             answers: answers,
             shuffle: ShuffleOrder(answers.length)
         };
-        console.log(problem);
+        //console.log(problem);
 
         return { 
             a: a, 
@@ -343,6 +343,12 @@ window.onload = function() {
         DrawAngleVarName(context, b, c, a, triangle.angleName.b);
     }
 
+    function MeasureText(context, text, style) {
+        context.font = style;
+        context.textBaseline = 'middle';
+        return context.measureText(text);
+    }
+
     function DrawChoiceText(context, text, font, x, y) {
         context.fillStyle = 'rgb(0,0,0)';
         context.font = font;
@@ -360,8 +366,153 @@ window.onload = function() {
         return ChoiceBox.y1 + ChoiceBox.rowHeight*row + ChoiceBox.topMargin;
     }
 
+    function EqBoxAppend(box, text, style) {
+        var item = {
+            text: text,
+            style: style
+        };
+        box.list.push(item);
+    }
+
+    function EqBoxFracAppend(box, numer, denom, style) {
+        var item = {
+            numer: numer,
+            denom: denom,
+            style: style
+        };
+        box.list.push(item);
+    }
+
+    function IsFraction(item) {
+        return ('numer' in item) && ('denom' in item);
+    }
+
+    function FormatEquationBox(text, isCorrect) {
+        // Example: text = 'sin A = t/v'.
+        var i, frac;
+        var token = text.split(' ');    // ['sin', 'A', '=', 't/v']
+        var box = { list:[], isCorrect:isCorrect };
+        for (i=0; i < token.length; ++i) {
+            if (/sin|cos|tan|=/.test(token[i])) {
+                // trig function or equal sign, so use roman font
+                EqBoxAppend(box, token[i], '24px serif');
+            } else if (token[i].indexOf('/') >= 0) {
+                // a fraction like 't/v'.
+                frac = token[i].split('/');
+                if (frac.length !== 2)
+                    throw 'Invalid fraction: ' + token[i];
+                EqBoxFracAppend(box, frac[0], frac[1], 'italic 24px serif');
+            } else {
+                // Assume variable name, so use italic font
+                EqBoxAppend(box, token[i], 'italic 24px serif');
+            }
+        }
+        return box;
+    }
+
+    function EqBoxDimension(context, box) {
+        // Determine relative coordinates of each internal item within the box.
+        // Compute the width and height of the box as a whole.
+        var i, item, tm, tm2;
+        var FracBarExtraWidth = 7;  // number of extra horizontal pixels for fraction bar
+        var ItemSpace = 7;  // number of extra pixels between items horizontally
+
+        box.width = 0;
+        box.height = 0;
+        for (i=0; i < box.list.length; ++i) {
+            if (i > 0)
+                box.width += ItemSpace;
+
+            item = box.list[i];
+            if (IsFraction(item)) {
+                // Calculate width of numerator and denominator.
+                // Size division bar based on the wider of the two.
+                tm = MeasureText(context, item.numer, item.style);
+                tm2 = MeasureText(context, item.denom, item.style);
+                if (tm2.width > tm.width)
+                    tm = tm2;
+                item.width = tm.width + 2*FracBarExtraWidth;
+                item.height = 3 * ChoiceBox.rowHeight;
+                item.extra = FracBarExtraWidth;
+            } else {
+                tm = MeasureText(context, item.text, item.style);
+                item.width = tm.width;
+                item.height = ChoiceBox.rowHeight;
+                item.extra = 0;
+            }
+
+            item.x = box.width;
+            box.width += item.width;
+        }
+    }
+
+    function RenderFraction(context, item, x, y) {
+        var FracVerticalPixels = 12;
+
+        // Draw numerator
+        DrawChoiceText(context, item.numer, item.style, x + item.extra, y - FracVerticalPixels);
+
+        // Draw horizontal line
+        context.beginPath();
+        context.strokeStyle = 'rgb(0,0,0)';
+        context.lineWidth = 1;
+        context.moveTo(x, y);
+        context.lineTo(x + item.width, y);
+        context.stroke();
+
+        // Draw denominator
+        DrawChoiceText(context, item.denom, item.style, x + item.extra, y + FracVerticalPixels);
+    }
+
+    function RenderText(context, item, x, y) {
+        DrawChoiceText(context, item.text, item.style, x, y);
+    }
+
+    function EqBoxRender(context, box, bx, by) {
+        // Draw each box at the specified (bx, by) as the upper left corner.
+        var i, item;
+        for (i=0; i < box.list.length; ++i) {
+            item = box.list[i];
+            if (IsFraction(item)) {
+                RenderFraction(context, item, bx + item.x, by);
+            } else {
+                RenderText(context, item, bx + item.x, by);
+            }
+        }
+    }
+
+    function EqBoxSetRender(context, boxset) {
+        var i, j, k, x1, y1, x, y, numcols;
+        var BoxWidth = 160;
+        var BoxHeight = 70;
+
+        // Calculate dimensions of each box.
+        for (i=0; i < boxset.list.length; ++i) {
+            EqBoxDimension(context, boxset.list[i]);
+        }
+
+        y1 = ChoiceTextY(5);
+        x1 = ChoiceTextX(0);
+        if (ChoiceBox.width < ChoiceBox.height) {
+            // Tall+skinny format: arrange 2 wide
+            numcols = 2;
+        } else {
+            // Short+wide format: arrange 3 wide
+            numcols = 3;
+        }
+
+        // Render the boxes in rows and columns
+        for (i=0; i < boxset.list.length; ++i) {
+            j = i % numcols;
+            k = (i - j) / numcols;
+            x = x1 + BoxWidth*j;
+            y = y1 + BoxHeight*k;
+            EqBoxRender(context, boxset.list[i], x, y);
+        }
+    }
+
     function DrawChoices(context, triangle) {
-        var i, x, y;
+        var i, x, y, boxset, box, text;
 
         // Draw a rectangle for now just so I can see where the choice box is.
         context.strokeStyle = 'rgb(128,128,128)';
@@ -385,11 +536,14 @@ window.onload = function() {
         x = ChoiceTextX(0);
         DrawChoiceText(context, 'Click the correct equation:', '24px serif', x, y);
 
+        boxset = { list: [] };
         for (i=0; i < triangle.problem.answers.length; ++i) {
-            y = ChoiceTextY(5 + i);
-            x = ChoiceTextX(0);
-            DrawChoiceText(context, triangle.problem.answers[triangle.problem.shuffle[i]], '24px serif', x, y);
+            text = triangle.problem.answers[triangle.problem.shuffle[i]];
+            box = FormatEquationBox(text, (triangle.problem.shuffle[i] === 0));
+            boxset.list.push(box);
         }
+
+        EqBoxSetRender(context, boxset);
     }
 
     function UpdateDisplay() {
@@ -404,8 +558,8 @@ window.onload = function() {
 
     function ResizeGraph() {
         // Calculate "ideal" graph dimensions as a function of the window dimensions.
-        var gwidth  = Math.max(window.innerWidth,  200);
-        var gheight = Math.max(window.innerHeight, 200);
+        var gwidth  = Math.max(window.innerWidth,  515);
+        var gheight = Math.max(window.innerHeight, 660);
         var divide, diagBoxSize, dx1, dy1;
         var choiceBoxWidth, choiceBoxHeight, cx1, cy1;
         var choiceBorder = 20;
