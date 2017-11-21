@@ -13,6 +13,7 @@ window.onload = function() {
     var ChoiceBox;      // a box holding the question and multiple choice answers
     var Triangle;       // a randomly generated triangle problem
     var EqBoxSet;
+    var IsChoiceMade = false;
 
     function GetRandomInt(min, max) {
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
@@ -391,7 +392,7 @@ window.onload = function() {
         // Example: text = 'sin A = t/v'.
         var i, frac;
         var token = text.split(' ');    // ['sin', 'A', '=', 't/v']
-        var box = { list:[], isCorrect:isCorrect, highlight:false };
+        var box = { list:[], isCorrect:isCorrect, highlight:false, chosen:false };
         for (i=0; i < token.length; ++i) {
             if (/sin|cos|tan|=/.test(token[i])) {
                 // trig function or equal sign, so use roman font
@@ -474,9 +475,17 @@ window.onload = function() {
         var y1 = box.y;
         var HighlightBorder = 5;
         box.y -= box.height/2;
+
         if (box.highlight) {
             // Draw shaded region under the box to indicate highlight.
             context.fillStyle = 'rgb(230,255,255)';
+            context.fillRect(
+                box.x - HighlightBorder, 
+                box.y - HighlightBorder, 
+                box.width + 2*HighlightBorder, 
+                box.height + 2*HighlightBorder);
+        } else if (box.chosen) {
+            context.fillStyle = box.isCorrect ? 'rgb(200,255,200)' : 'rgb(255,100,100)';
             context.fillRect(
                 box.x - HighlightBorder, 
                 box.y - HighlightBorder, 
@@ -556,6 +565,20 @@ window.onload = function() {
             }
         }
         return changed;
+    }
+
+    function EqBoxSelect(mx, my) {
+        var i, box, found = false;
+        if (EqBoxSet) {
+            for (i=0; i < EqBoxSet.list.length; ++i) {
+                box = EqBoxSet.list[i];
+                box.chosen = IsInsideEqBox(box, mx, my);
+                if (box.chosen) {
+                    found = true;
+                }
+            }
+        }
+        return found;
     }
 
     function DrawChoices(context, triangle) {
@@ -684,15 +707,19 @@ window.onload = function() {
         // Detect entering and leaving a choice box.
         // When entering a choice box, highlight the box.
         // When leaving a choice box, un-highlight the box.
-        if (EqBoxHighlight(e.pageX, e.pageY)) {
-            UpdateDisplay();
+        if (!IsChoiceMade) {
+            if (EqBoxHighlight(e.pageX, e.pageY)) {
+                UpdateDisplay();
+            }
         }
     }
 
     function CanvasOnMouseLeave(e) {
         // When mouse leaves the canvas, un-highlight any selected box.
-        if (EqBoxUnhighlightAll()) {
-            UpdateDisplay();
+        if (!IsChoiceMade) {
+            if (EqBoxUnhighlightAll()) {
+                UpdateDisplay();
+            }
         }
     }
 
@@ -702,6 +729,13 @@ window.onload = function() {
         // whether the choice is the correct answer or not.
         // If correct, make green with check mark.
         // If wrong, make red with red X.
+        if (!IsChoiceMade) {
+            EqBoxUnhighlightAll();
+            if (EqBoxSelect(e.pageX, e.pageY)) {
+                IsChoiceMade = true;
+                UpdateDisplay();
+            }
+        }
     }
 
     function OnResize() {
