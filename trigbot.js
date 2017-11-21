@@ -12,6 +12,7 @@ window.onload = function() {
     var DiagramBox;     // a box holding the diagram of the triangle
     var ChoiceBox;      // a box holding the question and multiple choice answers
     var Triangle;       // a randomly generated triangle problem
+    var EqBoxSet;
 
     function GetRandomInt(min, max) {
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
@@ -167,7 +168,6 @@ window.onload = function() {
             answers: answers,
             shuffle: ShuffleOrder(answers.length)
         };
-        //console.log(problem);
 
         return { 
             a: a, 
@@ -391,7 +391,7 @@ window.onload = function() {
         // Example: text = 'sin A = t/v'.
         var i, frac;
         var token = text.split(' ');    // ['sin', 'A', '=', 't/v']
-        var box = { list:[], isCorrect:isCorrect };
+        var box = { list:[], isCorrect:isCorrect, highlight:false };
         for (i=0; i < token.length; ++i) {
             if (/sin|cos|tan|=/.test(token[i])) {
                 // trig function or equal sign, so use roman font
@@ -418,7 +418,7 @@ window.onload = function() {
         var ItemSpace = 7;  // number of extra pixels between items horizontally
 
         box.width = 0;
-        box.height = 0;
+        box.height = 40;
         for (i=0; i < box.list.length; ++i) {
             if (i > 0)
                 box.width += ItemSpace;
@@ -468,21 +468,34 @@ window.onload = function() {
         DrawChoiceText(context, item.text, item.style, x, y);
     }
 
-    function EqBoxRender(context, box, bx, by) {
+    function EqBoxRender(context, box) {
         // Draw each box at the specified (bx, by) as the upper left corner.
         var i, item;
+        var y1 = box.y;
+        var HighlightBorder = 5;
+        box.y -= box.height/2;
+        if (box.highlight) {
+            // Draw shaded region under the box to indicate highlight.
+            context.fillStyle = 'rgb(230,255,255)';
+            context.fillRect(
+                box.x - HighlightBorder, 
+                box.y - HighlightBorder, 
+                box.width + 2*HighlightBorder, 
+                box.height + 2*HighlightBorder);
+        }
+
         for (i=0; i < box.list.length; ++i) {
             item = box.list[i];
             if (IsFraction(item)) {
-                RenderFraction(context, item, bx + item.x, by);
+                RenderFraction(context, item, box.x + item.x, y1);
             } else {
-                RenderText(context, item, bx + item.x, by);
+                RenderText(context, item, box.x + item.x, y1);
             }
         }
     }
 
     function EqBoxSetRender(context, boxset) {
-        var i, j, k, x1, y1, x, y, numcols;
+        var i, j, k, x1, y1, numcols, box;
         var BoxWidth = 160;
         var BoxHeight = 70;
 
@@ -503,12 +516,46 @@ window.onload = function() {
 
         // Render the boxes in rows and columns
         for (i=0; i < boxset.list.length; ++i) {
+            box = boxset.list[i];
             j = i % numcols;
             k = (i - j) / numcols;
-            x = x1 + BoxWidth*j;
-            y = y1 + BoxHeight*k;
-            EqBoxRender(context, boxset.list[i], x, y);
+            box.x = x1 + BoxWidth*j;
+            box.y = y1 + BoxHeight*k;
+            EqBoxRender(context, box);
         }
+    }
+
+    function IsInsideEqBox(box, mx, my) {
+        return (mx >= box.x) && (mx < box.x + box.width) && (my >= box.y) && (my < box.y + box.height);
+    }
+
+    function EqBoxUnhighlightAll() {
+        var i, box, changed = false;
+        if (EqBoxSet) {
+            for (i=0; i < EqBoxSet.list.length; ++i) {
+                box = EqBoxSet.list[i];
+                if (box.highlight) {
+                    box.highlight = false;
+                    changed = true;
+                }
+            }
+        }
+        return changed;
+    }
+
+    function EqBoxHighlight(mx, my) {
+        var i, box, h, changed = false;
+        if (EqBoxSet) {
+            for (i=0; i < EqBoxSet.list.length; ++i) {
+                box = EqBoxSet.list[i];
+                h = IsInsideEqBox(box, mx, my);
+                if (h !== box.highlight) {
+                    changed = true;
+                    box.highlight = h;
+                }
+            }
+        }
+        return changed;
     }
 
     function DrawChoices(context, triangle) {
@@ -536,14 +583,17 @@ window.onload = function() {
         x = ChoiceTextX(0);
         DrawChoiceText(context, 'Click the correct equation:', '24px serif', x, y);
 
-        boxset = { list: [] };
-        for (i=0; i < triangle.problem.answers.length; ++i) {
-            text = triangle.problem.answers[triangle.problem.shuffle[i]];
-            box = FormatEquationBox(text, (triangle.problem.shuffle[i] === 0));
-            boxset.list.push(box);
+        if (!EqBoxSet) {
+            boxset = { list:[] };
+            for (i=0; i < triangle.problem.answers.length; ++i) {
+                text = triangle.problem.answers[triangle.problem.shuffle[i]];
+                box = FormatEquationBox(text, (triangle.problem.shuffle[i] === 0));
+                boxset.list.push(box);
+            }
+            EqBoxSet = boxset;  // keep global so mouse interface works
         }
 
-        EqBoxSetRender(context, boxset);
+        EqBoxSetRender(context, EqBoxSet);
     }
 
     function UpdateDisplay() {
@@ -557,6 +607,9 @@ window.onload = function() {
     }
 
     function ResizeGraph() {
+        // Force recalculation of all boxes.
+        EqBoxSet = null;
+
         // Calculate "ideal" graph dimensions as a function of the window dimensions.
         var gwidth  = Math.max(window.innerWidth,  515);
         var gheight = Math.max(window.innerHeight, 660);
@@ -627,6 +680,30 @@ window.onload = function() {
         };
     }
 
+    function CanvasOnMouseMove(e) {
+        // Detect entering and leaving a choice box.
+        // When entering a choice box, highlight the box.
+        // When leaving a choice box, un-highlight the box.
+        if (EqBoxHighlight(e.pageX, e.pageY)) {
+            UpdateDisplay();
+        }
+    }
+
+    function CanvasOnMouseLeave(e) {
+        // When mouse leaves the canvas, un-highlight any selected box.
+        if (EqBoxUnhighlightAll()) {
+            UpdateDisplay();
+        }
+    }
+
+    function CanvasOnMouseClick(e) {
+        // When user clicks on any choice box, unhighlight all boxes,
+        // leave boxes in an unhighlightable state, and determine
+        // whether the choice is the correct answer or not.
+        // If correct, make green with check mark.
+        // If wrong, make red with red X.
+    }
+
     function OnResize() {
         ResizeGraph();
         UpdateDisplay();
@@ -636,6 +713,9 @@ window.onload = function() {
         Triangle = MakeRandomTriangle();
         OnResize();
         window.addEventListener('resize', OnResize);
+        canvas.onmousemove = CanvasOnMouseMove;
+        canvas.onmouseleave = CanvasOnMouseLeave;
+        canvas.onclick = CanvasOnMouseClick;
     }
 
     Init();
