@@ -524,7 +524,7 @@ window.onload = function() {
 
         y1 = ChoiceTextY(5);
         x1 = ChoiceTextX(0);
-        if (ChoiceBox.width < ChoiceBox.height) {
+        if (ChoiceBox.width < 470) {
             // Tall+skinny format: arrange 2 wide
             numcols = 2;
         } else {
@@ -643,8 +643,10 @@ window.onload = function() {
         EqBoxSet = null;
 
         // Calculate "ideal" graph dimensions as a function of the window dimensions.
-        var gwidth  = Math.max(window.innerWidth,  515);
-        var gheight = Math.max(window.innerHeight, 660);
+        var MinChoiceHor = 350;     // minimum allowed horizontal size of choice area
+        var MinChoiceVer = 400;     // minimum allowed vertical size of choice area
+        var gwidth  = Math.max(window.innerWidth, 1.5 * MinChoiceHor);
+        var gheight = Math.max(window.innerHeight, MinChoiceVer);
         var divide, diagBoxSize, dx1, dy1;
         var choiceBoxWidth, choiceBoxHeight, cx1, cy1;
         var choiceBorder = 20;
@@ -663,6 +665,8 @@ window.onload = function() {
         if (canvas.width > canvas.height) {
             // Split left/right: diagram on left, choices on right.
             divide = Math.floor(canvas.width / 2);
+            if (divide < MinChoiceHor)
+                divide = canvas.width - MinChoiceHor;
 
             // calculate diagram box on the left
             diagBoxSize = 0.9 * Math.min(divide, canvas.height);
