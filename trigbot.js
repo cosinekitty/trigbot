@@ -491,6 +491,15 @@ window.onload = function() {
                 box.y - HighlightBorder, 
                 box.width + 2*HighlightBorder, 
                 box.height + 2*HighlightBorder);
+        } else if (IsChoiceMade && box.isCorrect) {
+            // This is NOT the chosen box, but is the correct answer.
+            // Draw a green rectangle around it to show it as the correct answer.
+            context.strokeStyle = 'rgb(64,255,64)';
+            context.strokeRect(
+                box.x - HighlightBorder, 
+                box.y - HighlightBorder, 
+                box.width + 2*HighlightBorder, 
+                box.height + 2*HighlightBorder);
         }
 
         for (i=0; i < box.list.length; ++i) {
