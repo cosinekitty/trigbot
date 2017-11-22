@@ -251,7 +251,7 @@ window.onload = function() {
         context.fillStyle = 'rgb(0,0,255)';
         context.font = 'italic 24px serif';
         context.textBaseline = 'middle';
-        context.fillText(name, t.x - 6, t.y);
+        context.fillText(name, Math.max(t.x - 6, 0), t.y);
 
         //DrawTestMarker(context, t);
     }
@@ -297,7 +297,7 @@ window.onload = function() {
         context.fillStyle = 'rgb(64,0,255)';
         context.font = 'italic 24px serif';
         context.textBaseline = 'middle';
-        context.fillText(name, t.x - 6, t.y);
+        context.fillText(name, Math.max(t.x - 6, 0), t.y);
         //DrawTestMarker(context, t);
     }
 
