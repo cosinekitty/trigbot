@@ -13,7 +13,7 @@ window.onload = function() {
     var ChoiceBox;      // a box holding the question and multiple choice answers
     var Triangle;       // a randomly generated triangle problem
     var EqBoxSet;
-    var IsChoiceMade = false;
+    var IsChoiceMade = false;    
 
     function GetRandomInt(min, max) {
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
@@ -639,9 +639,6 @@ window.onload = function() {
     }
 
     function ResizeGraph() {
-        // Force recalculation of all boxes.
-        EqBoxSet = null;
-
         // Calculate "ideal" graph dimensions as a function of the window dimensions.
         var MinChoiceHor = 350;     // minimum allowed horizontal size of choice area
         var MinChoiceVer = 400;     // minimum allowed vertical size of choice area
