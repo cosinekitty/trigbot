@@ -13,7 +13,11 @@ window.onload = function() {
     var ChoiceBox;      // a box holding the question and multiple choice answers
     var Triangle;       // a randomly generated triangle problem
     var EqBoxSet;
-    var IsChoiceMade = false;    
+    var IsChoiceMade = false;
+
+    var MODE_BEGIN = 0;
+    var MODE_PLAY = 1;
+    var Mode = MODE_BEGIN;    
 
     function GetRandomInt(min, max) {
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
@@ -628,14 +632,27 @@ window.onload = function() {
         EqBoxSetRender(context, EqBoxSet);
     }
 
+    function DrawBeginScreen(context) {
+        var prompt = 'Click to begin playing.';
+        var style = '48px serif';
+        var tm = MeasureText(context, prompt, style);
+        var x = (canvas.width - tm.width) / 2;
+        var y = (canvas.height - 48) / 2;
+        DrawChoiceText(context, prompt, style, x, y);
+    }
+
     function UpdateDisplay() {
         var context = canvas.getContext('2d');
 
         // Erase previous contents
         context.clearRect(0, 0, canvas.width, canvas.height);
 
-        DrawTriangle(context, Triangle);
-        DrawChoices(context, Triangle);
+        if (Mode == MODE_BEGIN) {
+            DrawBeginScreen(context);
+        } else if (Mode == MODE_PLAY) {
+            DrawTriangle(context, Triangle);
+            DrawChoices(context, Triangle);
+        } 
     }
 
     function ResizeGraph() {
@@ -714,36 +731,46 @@ window.onload = function() {
     }
 
     function CanvasOnMouseMove(e) {
-        // Detect entering and leaving a choice box.
-        // When entering a choice box, highlight the box.
-        // When leaving a choice box, un-highlight the box.
-        if (!IsChoiceMade) {
-            if (EqBoxHighlight(e.pageX, e.pageY)) {
-                UpdateDisplay();
+        if (Mode === MODE_PLAY) {
+            // Detect entering and leaving a choice box.
+            // When entering a choice box, highlight the box.
+            // When leaving a choice box, un-highlight the box.
+            if (!IsChoiceMade) {
+                if (EqBoxHighlight(e.pageX, e.pageY)) {
+                    UpdateDisplay();
+                }
             }
         }
     }
 
     function CanvasOnMouseLeave(e) {
-        // When mouse leaves the canvas, un-highlight any selected box.
-        if (!IsChoiceMade) {
-            if (EqBoxUnhighlightAll()) {
-                UpdateDisplay();
+        if (Mode === MODE_PLAY) {
+            // When mouse leaves the canvas, un-highlight any selected box.
+            if (!IsChoiceMade) {
+                if (EqBoxUnhighlightAll()) {
+                    UpdateDisplay();
+                }
             }
         }
     }
 
     function CanvasOnMouseClick(e) {
-        // When user clicks on any choice box, unhighlight all boxes,
-        // leave boxes in an unhighlightable state, and determine
-        // whether the choice is the correct answer or not.
-        // If correct, make green with check mark.
-        // If wrong, make red with red X.
-        if (!IsChoiceMade) {
-            EqBoxUnhighlightAll();
-            if (EqBoxSelect(e.pageX, e.pageY)) {
-                IsChoiceMade = true;
-                UpdateDisplay();
+        if (Mode === MODE_BEGIN) {
+            // Begin the game!
+            Mode = MODE_PLAY;
+            UpdateDisplay();
+        } else if (Mode === MODE_PLAY) {
+            // When user clicks on any choice box, unhighlight all boxes,
+            // leave boxes in an unhighlightable state, and determine
+            // whether the choice is the correct answer or not.
+            // If correct, make green with check mark.
+            // If wrong, make red with red X.
+            if (!IsChoiceMade) {
+                EqBoxUnhighlightAll();
+                if (EqBoxSelect(e.pageX, e.pageY)) {
+                    IsChoiceMade = true;
+                    UpdateDisplay();
+                }
             }
         }
     }
