@@ -359,13 +359,17 @@ window.onload = function() {
         return context.measureText(text);
     }
 
-    function DrawChoiceText(context, text, font, x, y) {
-        context.fillStyle = 'rgb(0,0,0)';
+    function DrawText(context, text, font, style, x, y) {
+        context.fillStyle = style;
         context.font = font;
         context.textBaseline = 'middle';
         context.fillText(text, x, y);
         var tm = context.measureText(text);
         return x + tm.width;
+    }
+
+    function DrawChoiceText(context, text, font, x, y) {
+        return DrawText(context, text, font, 'rgb(0,0,0)', x, y);
     }
 
     function ChoiceTextX(col) {
@@ -521,7 +525,7 @@ window.onload = function() {
     }
 
     function EqBoxSetRender(context, boxset) {
-        var i, j, k, x1, y1, numcols, box;
+        var i, j, k, x1, y1, numcols, box, buttonText, scoreText, yButton;
         var BoxWidth = 160;
         var BoxHeight = 70;
 
@@ -555,12 +559,23 @@ window.onload = function() {
         // the next problem.
         if (ChosenBox) {
             // Remember rectangle so mouse events can highlight/select Next.
+
+            yButton = y1 + BoxHeight*(k+1);
+
+            if (FinishedProblemCount < TotalProblemCount) {
+                buttonText = 'Next';
+            } else {
+                buttonText = 'New Game';
+                scoreText = 'Score: ' + CorrectCount.toFixed(0) + '/' + TotalProblemCount.toFixed(0);
+                DrawText(context, scoreText, '24px serif', 'rgb(0,100,100)', x1, yButton + 12);
+            }
+
             NextButton = { 
                 x: x1 + BoxWidth*1,
-                y: y1 + BoxHeight*(k+1),
+                y: yButton,
                 width: 120,
                 height: 30,
-                text: 'Next',
+                text: buttonText,
                 highlight: false
             };
 
@@ -700,9 +715,9 @@ window.onload = function() {
         // Erase previous contents
         context.clearRect(0, 0, canvas.width, canvas.height);
 
-        if (Mode == MODE_BEGIN) {
+        if (Mode === MODE_BEGIN) {
             DrawBeginScreen(context);
-        } else if (Mode == MODE_PLAY) {
+        } else if (Mode === MODE_PLAY) {
             DrawTriangle(context, Triangle);
             DrawChoices(context, Triangle);
         } 
@@ -711,7 +726,7 @@ window.onload = function() {
     function ResizeGraph() {
         // Calculate "ideal" graph dimensions as a function of the window dimensions.
         var MinChoiceHor = 350;     // minimum allowed horizontal size of choice area
-        var MinChoiceVer = 400;     // minimum allowed vertical size of choice area
+        var MinChoiceVer = 472;     // minimum allowed vertical size of choice area
         var gwidth  = Math.max(window.innerWidth, 1.5 * MinChoiceHor);
         var gheight = Math.max(window.innerHeight, MinChoiceVer);
         var divide, diagBoxSize, dx1, dy1;
@@ -807,16 +822,24 @@ window.onload = function() {
         }
     }
 
+    function ResetGame() {
+        CorrectCount = 0;
+        FinishedProblemCount = 0;
+    }
+
+    function StartAnotherProblem() {
+        NextButton = null;
+        EqBoxSet = null;
+        ChosenBox = null;
+        Triangle = MakeRandomTriangle();
+    }
+
     function CanvasOnMouseClick(e) {
         if (Mode === MODE_BEGIN) {
             // Begin the game!
             Mode = MODE_PLAY;
-            CorrectCount = 0;
-            FinishedProblemCount = 0;
-            EqBoxSet = null;
-            NextButton = null;
-            ChosenBox = null;
-            Triangle = MakeRandomTriangle();
+            ResetGame();
+            StartAnotherProblem();
             UpdateDisplay();
         } else if (Mode === MODE_PLAY) {
             // When user clicks on any choice box, unhighlight all boxes,
@@ -833,17 +856,11 @@ window.onload = function() {
                 }
             }
 
-            if (ButtonClick(NextButton, e.pageX, e.pageY)) {
-                NextButton = null;
-                EqBoxSet = null;
-                ChosenBox = null;
-            
+            if (ButtonClick(NextButton, e.pageX, e.pageY)) {            
                 if (FinishedProblemCount === TotalProblemCount) {
-                    // Start over with a new game
                     Mode = MODE_BEGIN;
                 } else {
-                    // Start the next problem in the current game
-                    Triangle = MakeRandomTriangle();
+                    StartAnotherProblem();
                 }
                 UpdateDisplay();
                 return;
