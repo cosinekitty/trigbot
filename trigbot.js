@@ -13,8 +13,13 @@ window.onload = function() {
     var ChoiceBox;      // a box holding the question and multiple choice answers
     var Triangle;       // a randomly generated triangle problem
     var EqBoxSet;
-    var IsChoiceMade = false;
-
+    var ChosenBox;      // no choice made yet
+    var TotalProblemCount = 10;
+    var FinishedProblemCount = 0;
+    var CorrectCount = 0;
+    var NextButton;
+    var HighlightBorder = 5;
+    
     var MODE_BEGIN = 0;
     var MODE_PLAY = 1;
     var Mode = MODE_BEGIN;    
@@ -477,7 +482,6 @@ window.onload = function() {
         // Draw each box at the specified (bx, by) as the upper left corner.
         var i, item;
         var y1 = box.y;
-        var HighlightBorder = 5;
         box.y -= box.height/2;
 
         if (box.highlight) {
@@ -495,7 +499,7 @@ window.onload = function() {
                 box.y - HighlightBorder, 
                 box.width + 2*HighlightBorder, 
                 box.height + 2*HighlightBorder);
-        } else if (IsChoiceMade && box.isCorrect) {
+        } else if (ChosenBox && box.isCorrect) {
             // This is NOT the chosen box, but is the correct answer.
             // Draw a green rectangle around it to show it as the correct answer.
             context.strokeStyle = 'rgb(64,255,64)';
@@ -545,6 +549,43 @@ window.onload = function() {
             box.y = y1 + BoxHeight*k;
             EqBoxRender(context, box);
         }
+
+        // If a box has just been selected, show score/total
+        // and present a Next button that can be clicked to start
+        // the next problem.
+        if (ChosenBox) {
+            // Remember rectangle so mouse events can highlight/select Next.
+            NextButton = { 
+                x: x1 + BoxWidth*1,
+                y: y1 + BoxHeight*(k+1),
+                width: 120,
+                height: 30,
+                text: 'Next',
+                highlight: false
+            };
+
+            DrawButton(context, NextButton);
+        }
+    }
+
+    function DrawButton(context, button) {
+        var tm;
+
+        if (button) {
+            context.fillStyle = button.highlight ? 'rgb(230,255,255)' : 'rgb(255,255,0)';
+            context.fillRect(
+                button.x - HighlightBorder,
+                button.y - HighlightBorder,
+                button.width + 2*HighlightBorder,
+                button.height + 2*HighlightBorder);
+
+            // Center text vertically and horizontally inside the rectangle.
+            context.fillStyle = 'rgb(0,0,0)';
+            context.font = '24px serif';
+            context.textBaseline = 'middle';
+            tm = context.measureText(button.text);
+            context.fillText(button.text, button.x + (button.width - tm.width)/2, button.y + 12);
+        }
     }
 
     function IsInsideEqBox(box, mx, my) {
@@ -581,17 +622,29 @@ window.onload = function() {
     }
 
     function EqBoxSelect(mx, my) {
-        var i, box, found = false;
+        var i, box;
         if (EqBoxSet) {
             for (i=0; i < EqBoxSet.list.length; ++i) {
                 box = EqBoxSet.list[i];
                 box.chosen = IsInsideEqBox(box, mx, my);
                 if (box.chosen) {
-                    found = true;
+                    if (box.isCorrect) {
+                        ++CorrectCount;
+                    }
+                    ++FinishedProblemCount;
+                    return box;
                 }
             }
         }
-        return found;
+        return null;
+    }
+
+    function ButtonClick(button, mx, my) {
+        return button &&
+            mx >= button.x &&
+            mx < button.x + button.width &&
+            my >= button.y &&
+            my < button.y + button.width;
     }
 
     function DrawChoices(context, triangle) {
@@ -735,7 +788,7 @@ window.onload = function() {
             // Detect entering and leaving a choice box.
             // When entering a choice box, highlight the box.
             // When leaving a choice box, un-highlight the box.
-            if (!IsChoiceMade) {
+            if (!ChosenBox) {
                 if (EqBoxHighlight(e.pageX, e.pageY)) {
                     UpdateDisplay();
                 }
@@ -746,7 +799,7 @@ window.onload = function() {
     function CanvasOnMouseLeave(e) {
         if (Mode === MODE_PLAY) {
             // When mouse leaves the canvas, un-highlight any selected box.
-            if (!IsChoiceMade) {
+            if (!ChosenBox) {
                 if (EqBoxUnhighlightAll()) {
                     UpdateDisplay();
                 }
@@ -758,6 +811,10 @@ window.onload = function() {
         if (Mode === MODE_BEGIN) {
             // Begin the game!
             Mode = MODE_PLAY;
+            CorrectCount = 0;
+            FinishedProblemCount = 0;
+            EqBoxSet = null;
+            Triangle = MakeRandomTriangle();
             UpdateDisplay();
         } else if (Mode === MODE_PLAY) {
             // When user clicks on any choice box, unhighlight all boxes,
@@ -765,12 +822,29 @@ window.onload = function() {
             // whether the choice is the correct answer or not.
             // If correct, make green with check mark.
             // If wrong, make red with red X.
-            if (!IsChoiceMade) {
+            if (!ChosenBox) {
                 EqBoxUnhighlightAll();
-                if (EqBoxSelect(e.pageX, e.pageY)) {
-                    IsChoiceMade = true;
+                ChosenBox = EqBoxSelect(e.pageX, e.pageY);
+                if (ChosenBox) {
                     UpdateDisplay();
+                    return;
                 }
+            }
+
+            if (ButtonClick(NextButton, e.pageX, e.pageY)) {
+                NextButton = null;
+                if (FinishedProblemCount === TotalProblemCount) {
+                    // Start over with a new game
+                    Mode = MODE_BEGIN;
+                } else {
+                    // Start the next problem in the current game
+                    EqBoxSet = null;
+                    ChosenBox = null;
+                    NextButton = null;
+                    Triangle = MakeRandomTriangle();
+                }
+                UpdateDisplay();
+                return;
             }
         }
     }
@@ -781,7 +855,6 @@ window.onload = function() {
     }
 
     function Init() {
-        Triangle = MakeRandomTriangle();
         OnResize();
         window.addEventListener('resize', OnResize);
         canvas.onmousemove = CanvasOnMouseMove;
