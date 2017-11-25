@@ -644,7 +644,7 @@ window.onload = function() {
             mx >= button.x &&
             mx < button.x + button.width &&
             my >= button.y &&
-            my < button.y + button.width;
+            my < button.y + button.height;
     }
 
     function DrawChoices(context, triangle) {
@@ -814,6 +814,8 @@ window.onload = function() {
             CorrectCount = 0;
             FinishedProblemCount = 0;
             EqBoxSet = null;
+            NextButton = null;
+            ChosenBox = null;
             Triangle = MakeRandomTriangle();
             UpdateDisplay();
         } else if (Mode === MODE_PLAY) {
@@ -833,14 +835,14 @@ window.onload = function() {
 
             if (ButtonClick(NextButton, e.pageX, e.pageY)) {
                 NextButton = null;
+                EqBoxSet = null;
+                ChosenBox = null;
+            
                 if (FinishedProblemCount === TotalProblemCount) {
                     // Start over with a new game
                     Mode = MODE_BEGIN;
                 } else {
                     // Start the next problem in the current game
-                    EqBoxSet = null;
-                    ChosenBox = null;
-                    NextButton = null;
                     Triangle = MakeRandomTriangle();
                 }
                 UpdateDisplay();
